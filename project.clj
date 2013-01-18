@@ -1,4 +1,4 @@
-(defproject update "0.1.0-SNAPSHOT"
+(defproject update "0.1.1"
   :description "A small utility for keeping local git/mercurial repos up-to-date"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
