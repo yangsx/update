@@ -74,7 +74,7 @@
   {:pre [(and (fs/exists? d) (fs/directory? d))]}
   (binding [*update-status* (ref *initial-update-status*)]
     (doseq [repo (fs/list-dir d)]
-      (let [repo (fs/absolute-path (fs/file d repo))]
+      (let [repo (-> (fs/file d repo) fs/normalized-path fs/absolute-path)]
         (when (fs/directory? repo)
           (if (and (git-repo? repo)
                    (not (local-repo? repo)))
@@ -89,4 +89,5 @@
 Skip the folder if there is any indication that the remote repo is dead."
   [& args]
   (doseq [d args]
-    (-> d update-repos println)))
+    (-> d update-repos println))
+  (System/exit 0))
