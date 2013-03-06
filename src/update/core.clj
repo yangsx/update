@@ -13,7 +13,7 @@
 
 (defn log-status
   "git fetch/rebase/pull results in:
-   {:exit 128 :out \"\" :err \"something\"} if error in fetching 
+   {:exit 128 :out \"\" :err \"something\"} if error in fetching
    {:exit 0 :out \"\" :err \"\"} if already updated, nothing fetched
    {:exit 0 :out \"\" :err \"something\"} if something fetched
    {:exit 0 :out \"something\" :err \"\"} if something rebased
@@ -73,7 +73,7 @@
   [d]
   {:pre [(and (fs/exists? d) (fs/directory? d))]}
   (binding [*update-status* (ref *initial-update-status*)]
-    (doseq [repo (fs/list-dir d)]
+    (doseq [repo (-> d fs/list-dir sort)]
       (let [repo (-> (fs/file d repo) fs/normalized-path fs/absolute-path)]
         (when (fs/directory? repo)
           (if (and (git-repo? repo)
