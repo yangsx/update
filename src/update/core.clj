@@ -22,6 +22,14 @@
   (when *update-status*
     (dosync (commute *update-status* update-in [kind] conj repo-name))))
 
+(defn sort-status
+  "Sort the repo lists in the update-status."
+  [{:keys [up-to-date updated merge-failure fetch-failure]}]
+  {:up-to-date (sort up-to-date)
+   :updated (sort updated)
+   :fetch-failure (sort fetch-failure)
+   :merge-failure (sort merge-failure)})
+
 (defn exit-ok?
   [{:keys [exit out err]}]
   (zero? exit))
@@ -54,9 +62,9 @@
 
 (defn update-git
   [repo]
+  (println "git fetch" repo)
   (let [fetch (sh/with-sh-dir repo (sh/sh "git" "fetch"))
         repo-name (fs/base-name repo)]
-    (println "git fetch" repo)
     (print-sh-result fetch)
     (if (exit-ok? fetch)
       (if (up-to-date? fetch)
@@ -81,7 +89,7 @@
             (update-git repo)
             ;; not a git repo
             ))))
-    @*update-status*))
+    (sort-status @*update-status*)))
 
 (defn -main
   "Given a list of directories, recurse to find subdirectories that contains a git/mercury repo and fetch/merge/rebase from the remote.
