@@ -81,14 +81,17 @@
   [d]
   {:pre [(and (fs/exists? d) (fs/directory? d))]}
   (binding [*update-status* (ref *initial-update-status*)]
-    (doseq [repo (-> d fs/list-dir sort)]
-      (let [repo (-> (fs/file d repo) fs/normalized-path fs/absolute-path)]
-        (when (fs/directory? repo)
-          (if (and (git-repo? repo)
-                   (not (local-repo? repo)))
-            (update-git repo)
-            ;; not a git repo
-            ))))
+    (let [repos
+          (->> d
+               fs/list-dir
+               (map #(-> (fs/file d %) fs/normalized-path fs/absolute-path))
+               (filter #(and (fs/directory? %)
+                             (git-repo? %)
+                             (not (local-repo? %))))
+               (map agent))]
+      (doseq [repo repos]
+        (send-off repo update-git))
+      (apply await repos))
     (sort-status @*update-status*)))
 
 (defn -main
