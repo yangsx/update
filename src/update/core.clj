@@ -1,7 +1,7 @@
 (ns update.core
   (:gen-class)
   (:require [clojure.java.shell :as sh]
-            [fs.core :as fs]))
+            [me.raynes.fs :as fs]))
 
 (def ^:dynamic *initial-update-status*
   {:fetch-failure []
