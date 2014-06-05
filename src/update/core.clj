@@ -69,8 +69,8 @@
     (if (exit-ok? fetch)
       (if (up-to-date? fetch)
         (log-status repo-name :up-to-date)
-        (let [rebase (sh/with-sh-dir repo (sh/sh "git" "rebase"))]
-          (println "git rebase" repo)
+        (let [rebase (sh/with-sh-dir repo (sh/sh "git" "merge" "FETCH_HEAD"))]
+          (println "git merge" repo)
           (print-sh-result rebase)
           (if (exit-ok? rebase)
             (log-status repo-name :updated)
