@@ -3,13 +3,13 @@
   (:require [clojure.java.shell :as sh]
             [me.raynes.fs :as fs]))
 
-(def ^:dynamic *initial-update-status*
+(def initial-update-status
   {:fetch-failure []
    :up-to-date []
    :updated []
    :merge-failure []})
 
-(def ^:dynamic *update-status* nil)
+(def updated-status (ref nil))
 
 (defn log-status
   "git fetch/rebase/pull results in:
@@ -19,16 +19,16 @@
    {:exit 0 :out \"something\" :err \"\"} if something rebased
    {:exit 0 :out \"something\" :err \"something\"} if error in rebasing"
   [repo-name kind]
-  (when *update-status*
-    (dosync (commute *update-status* update-in [kind] conj repo-name))))
+  (when @updated-status
+    (dosync (commute updated-status update-in [kind] conj repo-name))))
 
 (defn sort-status
   "Sort the repo lists in the update-status."
   [{:keys [up-to-date updated merge-failure fetch-failure]}]
-  {:up-to-date (sort up-to-date)
-   :updated (sort updated)
-   :fetch-failure (sort fetch-failure)
-   :merge-failure (sort merge-failure)})
+  {:up-to-date (vec (sort up-to-date))
+   :updated (vec (sort updated))
+   :fetch-failure (vec (sort fetch-failure))
+   :merge-failure (vec (sort merge-failure))})
 
 (defn exit-ok?
   [{:keys [exit out err]}]
@@ -80,25 +80,33 @@
 (defn update-repos
   [d]
   {:pre [(and (fs/exists? d) (fs/directory? d))]}
-  (binding [*update-status* (ref *initial-update-status*)]
-    (let [repos
-          (->> d
-               fs/list-dir
-               (map #(-> (fs/file d %) fs/normalized-path fs/absolute-path))
-               (filter #(and (fs/directory? %)
-                             (git-repo? %)
-                             (not (local-repo? %))))
-               (map agent))]
-      (doseq [repo repos]
-        (send-off repo update-git))
-      (apply await repos))
-    (sort-status @*update-status*)))
+  (dosync (ref-set updated-status initial-update-status))
+  (let [repos
+        (->> d
+             fs/list-dir
+             (map #(-> (fs/file d %) fs/normalized-path fs/absolute-path))
+             (filter #(and (fs/directory? %)
+                           (git-repo? %)
+                           (not (local-repo? %))))
+             sort
+             (map agent))]
+    (doseq [repo repos]
+      (send repo update-git))
+    (apply await repos))
+  (sort-status @updated-status))
+
+(defn add-shutdown-hook
+  "handles Ctrl-C. f is a zero-argument function."
+  [f]
+  (.addShutdownHook (Runtime/getRuntime)
+                    (Thread. f)))
 
 (defn -main
   "Given a list of directories, recurse to find subdirectories that contains a git/mercury repo and fetch/merge/rebase from the remote.
 
 Skip the folder if there is any indication that the remote repo is dead."
   [& args]
+  (add-shutdown-hook (fn [] (let [ret (str "Updating " (sort-status @updated-status))] (println ret))))
   (doseq [d args]
     (-> d update-repos println))
   (System/exit 0))
