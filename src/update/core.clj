@@ -40,9 +40,9 @@
 
 (defn print-sh-result
   [{:keys [exit out err]}]
-  (when (not (empty? err))
+  (when (seq err)
     (println err))
-  (when (not (empty? out))
+  (when (seq out)
     (println out)))
 
 (defn git-repo?
@@ -69,10 +69,10 @@
     (if (exit-ok? fetch)
       (if (up-to-date? fetch)
         (log-status repo-name :up-to-date)
-        (let [rebase (sh/with-sh-dir repo (sh/sh "git" "merge" "FETCH_HEAD"))]
+        (let [result (sh/with-sh-dir repo (sh/sh "git" "merge" "FETCH_HEAD"))]
           (println "git merge" repo)
-          (print-sh-result rebase)
-          (if (exit-ok? rebase)
+          (print-sh-result result)
+          (if (exit-ok? result)
             (log-status repo-name :updated)
             (log-status repo-name :merge-failure))))
       (log-status repo-name :fetch-failure))))

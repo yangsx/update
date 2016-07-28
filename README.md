@@ -4,7 +4,7 @@ This is a small utility in Clojure to keep your local git repos updated.
 
 ## Usage
 
-Suppose you have dozens and even hundreds git repos from remote
+Suppose you have dozens and even hundreds of git repos from remote
 repositories, say github service. Keeping them all up-to-date soon
 becomes a drudgery.
 
@@ -15,7 +15,7 @@ If you are using leiningen 2, you can run it in a console with:
 
 Or you can simply call it with a standalone jar in a console:
 
-    $ java -jar update-0.1.0-SNAPSHOT-standalone.jar your-repos
+    $ java -jar update-0.1.3-standalone.jar your-repos
 
 where all the directories in _your-repos_ will be checked for updates.
 
