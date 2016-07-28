@@ -12,12 +12,12 @@
 (def updated-status (ref nil))
 
 (defn log-status
-  "git fetch/rebase/pull results in:
+  "git fetch/merge results in:
    {:exit 128 :out \"\" :err \"something\"} if error in fetching
    {:exit 0 :out \"\" :err \"\"} if already updated, nothing fetched
    {:exit 0 :out \"\" :err \"something\"} if something fetched
-   {:exit 0 :out \"something\" :err \"\"} if something rebased
-   {:exit 0 :out \"something\" :err \"something\"} if error in rebasing"
+   {:exit 0 :out \"something\" :err \"\"} if something merged
+   {:exit 0 :out \"something\" :err \"something\"} if error in merging"
   [repo-name kind]
   (when @updated-status
     (dosync (commute updated-status update-in [kind] conj repo-name))))
@@ -102,7 +102,7 @@
                     (Thread. f)))
 
 (defn -main
-  "Given a list of directories, recurse to find subdirectories that contains a git/mercury repo and fetch/merge/rebase from the remote.
+  "Given a list of directories, recurse to find subdirectories that contains a git repo and fetch/merge from the remote.
 
 Skip the folder if there is any indication that the remote repo is dead."
   [& args]
