@@ -17,7 +17,8 @@ Or you can simply call it with a standalone jar in a console:
 
     $ java -jar update-0.1.3-standalone.jar your-repos
 
-where all the directories in _your-repos_ will be checked for updates.
+where all the directories in _your-repos_ will be checked for updates unless
+there is a file `.ignore` in it.
 
 ## License
 

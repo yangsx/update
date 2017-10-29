@@ -1,4 +1,4 @@
-(defproject update "0.1.3"
+(defproject update "0.1.4"
   :description "A small utility for keeping local git repos up-to-date"
   :url "https://github.com/yangsx/update"
   :license {:name "Eclipse Public License"
