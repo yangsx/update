@@ -53,6 +53,11 @@
          (fs/directory? git)
          (not (fs/exists? (fs/file git "svn"))))))
 
+(defn ignored?
+  [d]
+  "returns true if d contains  a file '.ignore'."
+  (fs/exists? (fs/file d ".ignore")))
+
 (defn local-repo?
   "returns true if repo is a local-only repo."
   [repo]
@@ -87,6 +92,7 @@
              (map #(-> (fs/file d %) fs/normalized-path fs/absolute-path))
              (filter #(and (fs/directory? %)
                            (git-repo? %)
+                           (not (ignored? %))
                            (not (local-repo? %))))
              sort
              (map agent))]
