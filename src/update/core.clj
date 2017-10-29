@@ -1,7 +1,7 @@
 (ns update.core
   (:gen-class)
   (:require [clojure.java.shell :as sh]
-            [me.raynes.fs :as fs]))
+            [clojure.java.io :as io]))
 
 (def initial-update-status
   {:fetch-failure []
@@ -48,15 +48,15 @@
 (defn git-repo?
   "returns true if d is a git repo."
   [d]
-  (let [git (fs/file d ".git")]
-    (and (fs/exists? git)
-         (fs/directory? git)
-         (not (fs/exists? (fs/file git "svn"))))))
+  (let [git (io/file d ".git")]
+    (and (.exists git)
+         (.isDirectory git)
+         (not (.exists (io/file git "svn"))))))
 
 (defn ignored?
   [d]
   "returns true if d contains  a file '.ignore'."
-  (fs/exists? (fs/file d ".ignore")))
+  (.exists (io/file d ".ignore")))
 
 (defn local-repo?
   "returns true if repo is a local-only repo."
@@ -66,16 +66,16 @@
          (empty? (:out remotes)))))
 
 (defn update-git
-  [repo]
-  (println "git fetch" repo)
+  [^java.io.File repo]
+  (println "git fetch" (str repo))
   (let [fetch (sh/with-sh-dir repo (sh/sh "git" "fetch"))
-        repo-name (fs/base-name repo)]
+        repo-name (.getName repo)]
     (print-sh-result fetch)
     (if (exit-ok? fetch)
       (if (up-to-date? fetch)
         (log-status repo-name :up-to-date)
         (let [result (sh/with-sh-dir repo (sh/sh "git" "merge" "FETCH_HEAD"))]
-          (println "git merge" repo)
+          (println "git merge" (str repo))
           (print-sh-result result)
           (if (exit-ok? result)
             (log-status repo-name :updated)
@@ -83,14 +83,13 @@
       (log-status repo-name :fetch-failure))))
 
 (defn update-repos
-  [d]
-  {:pre [(and (fs/exists? d) (fs/directory? d))]}
+  [^java.io.File d]
+  {:pre [(and (.exists d) (.isDirectory d))]}
   (dosync (ref-set updated-status initial-update-status))
   (let [repos
         (->> d
-             fs/list-dir
-             (map #(-> (fs/file d %) fs/normalized-path fs/absolute-path))
-             (filter #(and (fs/directory? %)
+             (.listFiles)
+             (filter #(and (.isDirectory ^java.io.File %)
                            (git-repo? %)
                            (not (ignored? %))
                            (not (local-repo? %))))
@@ -103,7 +102,7 @@
 
 (defn add-shutdown-hook
   "handles Ctrl-C. f is a zero-argument function."
-  [f]
+  [^Runnable f]
   (.addShutdownHook (Runtime/getRuntime)
                     (Thread. f)))
 
@@ -114,5 +113,5 @@ Skip the folder if there is any indication that the remote repo is dead."
   [& args]
   (add-shutdown-hook (fn [] (let [ret (str "Updating " (sort-status @updated-status))] (println ret))))
   (doseq [d args]
-    (-> d update-repos println))
+    (-> d io/file update-repos println))
   (System/exit 0))
